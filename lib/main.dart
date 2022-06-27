@@ -2,98 +2,145 @@ import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
-
 void main() => runApp(
-  MaterialApp(
-    home: Home(),
-  )
-
+    MaterialApp(
+      home: Home(),
+    )
 );
 
 class Home extends StatefulWidget {
-  const Home({Key? key}) : super(key: key);
-
   @override
-  State<Home> createState() => _HomeState();
+  _HomeState createState() => _HomeState();
 }
 
 class _HomeState extends State<Home> {
 
   _recuperarBancoDados() async {
-    final caminhoBancodeDados = await getDatabasesPath();
-    final localBancodados = join(caminhoBancodeDados, "banco.db");
+
+    final caminhoBancoDados = await getDatabasesPath();
+    final localBancoDados = join(caminhoBancoDados, "banco.db");
 
     var bd = await openDatabase(
-      localBancodados,
-      version: 1,
-      onCreate: (db, dbVersaoRecente){
-        String sql = "CREATE TABLE usuarios(id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, idade INTEGER)";
-        db.execute(sql);
-
-      }
+        localBancoDados,
+        version: 1,
+        onCreate: (db, dbVersaoRecente){
+          String sql = "CREATE TABLE usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nome VARCHAR, idade INTEGER) ";
+          db.execute(sql);
+        }
     );
-      return bd;
+
+    return bd;
+    //print("aberto: " + bd.isOpen.toString() );
 
   }
 
-    _salvar() async {
-      Database bd = await _recuperarBancoDados();
+  _salvar() async {
 
-        Map<String, dynamic> dadosUsuario = {
-          "nome": "Lais covas",
-          "idade": 24
-        };
-        int id = await bd.insert("usuarios", dadosUsuario);
-        print("salvo $id");
+    Database bd = await _recuperarBancoDados();
+
+    Map<String, dynamic> dadosUsuario = {
+      "nome" : "zurich destefanno",
+      "idade" : 58
+    };
+    int id = await bd.insert("usuarios", dadosUsuario);
+    print("Salvo: $id " );
+
+  }
+
+  _listarUsuarios() async {
+
+    Database bd = await _recuperarBancoDados();
+
+    //String sql = "SELECT * FROM usuarios WHERE id = 5 ";
+    //String sql = "SELECT * FROM usuarios WHERE idade >= 30 AND idade <= 58";
+    //String sql = "SELECT * FROM usuarios WHERE idade BETWEEN 18 AND 46 ";
+    //String sql = "SELECT * FROM usuarios WHERE idade IN (18,30) ";
+    //String filtro = "an";
+    //String sql = "SELECT * FROM usuarios WHERE nome LIKE '%" + filtro + "%' ";
+    //String sql = "SELECT *, UPPER(nome) as nomeMaiu FROM usuarios WHERE 1=1 ORDER BY UPPER(nome) DESC ";//ASC, DESC
+    //String sql = "SELECT *, UPPER(nome) as nomeMaiu FROM usuarios WHERE 1=1 ORDER BY idade DESC LIMIT 3";//ASC, DESC
+    String sql = "SELECT * FROM usuarios ";//ASC, DESC
+    List usuarios = await bd.rawQuery(sql);
+
+    for( var usuario in usuarios ){
+      print(
+          "item id: " + usuario['id'].toString() +
+              " nome: " + usuario['nome'] +
+              " idade: " + usuario['idade'].toString()
+      );
     }
 
-    _listarUsuarios() async {
-      Database bd = await _recuperarBancoDados();
-     // String filtro = "Caio";
-     String sql2 = "SELECT * FROM usuarios";
-      //String sql2 = "SELECT * FROM usuarios WHERE id = 5 ";
-      //String sql2 = "SELECT * FROM usuarios WHERE idade >= 30 AND idade <= 58";
-      //String sql2 = "SELECT * FROM usuarios WHERE idade BETWEEN 18 AND 46 ";
-      //String sql2 = "SELECT * FROM usuarios WHERE idade IN (18,30) ";
-      //String sql2 = "SELECT * FROM usuarios WHERE nome LIKE '%"+ filtro + "%' ";  //o % serve como procure nome e o que vier na frente
-      //String sql2 = "SELECT * FROM usuarios WHERE 1 = 1 ORDER BY UPPER(nome) ASC";
-      List usuarios = await bd.rawQuery(sql2);
-      
-      for(var usuario in usuarios){
-        print(
-            "Item id :" + usuario['id'].toString() + " nome: " + usuario['nome'] + "  idade: " + usuario['idade'].toString());
-      }
+    //print("usuarios: " + usuarios.toString() );
 
-      //print("usuarios" + usuarios.toString());
-      
+  }
 
-    }
+  _listarUsuarioPeloId(int id) async {
 
+    Database bd = await _recuperarBancoDados();
 
-    _recuperarUsuarioById(int id) async {
-      Database bd = await _recuperarBancoDados();
-
-      List usuarios = await bd.query(
+    //CRUD -> Create, Read, Update and Delete
+    List usuarios = await bd.query(
         "usuarios",
         columns: ["id", "nome", "idade"],
         where: "id = ?",
         whereArgs: [id]
+    );
 
-
+    for( var usuario in usuarios ){
+      print(
+          "item id: " + usuario['id'].toString() +
+              " nome: " + usuario['nome'] +
+              " idade: " + usuario['idade'].toString()
       );
-      for(var usuario in usuarios){
-        print(
-            "Item id :" + usuario['id'].toString() + " nome: " + usuario['nome'] + "  idade: " + usuario['idade'].toString());
-      }
-
-
     }
+
+  }
+
+  _excluirUsuario(int id) async {
+
+    Database bd = await _recuperarBancoDados();
+
+    int retorno = await bd.delete(
+        "usuarios",
+        /*where: "id = ?",
+      whereArgs: [id]*/
+        where: " nome = ? AND idade = ?",
+        whereArgs: ["Jamilton Damasceno", 40]
+    );
+
+    print("item qtde removida: $retorno");
+
+  }
+
+  _atualizarUsuario(int id) async {
+
+    Database bd = await _recuperarBancoDados();
+
+    Map<String, dynamic> dadosUsuario = {
+      "nome" : "Mariana Almeida",
+      "idade" : 18
+    };
+    int retorno = await bd.update(
+        "usuarios",
+        dadosUsuario,
+        where: "id = ?",
+        whereArgs: [id]
+    );
+
+    print("item qtde atualizada: $retorno");
+
+  }
 
   @override
   Widget build(BuildContext context) {
-   // _salvar();
-   // _listarUsuarios();
-    _recuperarUsuarioById(2);
+
+    _salvar();
+    //_excluirUsuario(2);
+    //_atualizarUsuario(3);
+    _listarUsuarios();
+    //_listarUsuarioPeloId(1);
+
     return Container();
   }
 }
+
